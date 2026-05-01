@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="description" content="The Lean - 低速回線でも快適に読めるテキスト特化ニュースアプリ">
+<meta name="theme-color" content="#1a1a1a">
+<title>The Lean</title>
+
+<style>
+:root {
+  --bg:#faf8f3;--bg2:#f0ede4;--text:#1a1a1a;--text2:#555;--text3:#999;
+  --border:#d0c9bc;--border2:#e8e3da;--accent:#b5460f;--info:#2563eb;--radius:6px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#1a1917;--bg2:#252320;--text:#f0ede4;--text2:#b0a898;--text3:#706860;
+  --border:#3a3630;--border2:#2e2b26;--accent:#e06030;--info:#60a5fa;}
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Hiragino Mincho ProN','Yu Mincho','MS Mincho',Georgia,serif;background:var(--bg);color:var(--text);min-height:100dvh;overscroll-behavior:none}
+#app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+.screen{display:none;flex:1;flex-direction:column;padding-bottom:60px}
+.screen.active{display:flex}
+
+/* MASTHEAD */
+.mast{text-align:center;padding:12px 16px 10px;border-bottom:3px double var(--border);background:var(--bg);position:sticky;top:0;z-index:10}
+.mast-title{font-size:28px;font-weight:700;letter-spacing:0.15em;color:var(--text);line-height:1}
+.mast-rule{height:1px;background:var(--border);margin:6px 0 4px}
+.mast-meta{display:flex;justify-content:space-between;align-items:center;font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:10px;color:var(--text3);letter-spacing:0.05em}
+.badge{background:var(--accent);color:#fff;font-size:9px;padding:2px 6px;border-radius:2px;letter-spacing:0.08em}
+
+/* SEARCH */
+.search-wrap{padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--border2);display:flex;gap:6px}
+.search-wrap input{flex:1;font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg2);color:var(--text);outline:none}
+.search-wrap input:focus{border-color:var(--accent)}
+.search-wrap button{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:11px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--text3);cursor:pointer}
+
+/* TABS */
+.tabs{display:flex;overflow-x:auto;background:var(--bg);border-bottom:2px solid var(--text);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.06em;padding:8px 14px;border:none;background:transparent;color:var(--text3);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;flex-shrink:0;transition:color 0.15s}
+.tab.on{color:var(--text);border-bottom-color:var(--text)}
+
+/* NEWS LIST */
+.news-wrap{flex:1;overflow-y:auto}
+.news-count{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:10px;color:var(--text3);padding:6px 16px;letter-spacing:0.04em;border-bottom:1px solid var(--border2)}
+
+/* 通常モード */
+.ni{padding:12px 16px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background 0.1s}
+.ni:first-child{border-bottom:2px solid var(--border)}
+.ni:active{background:var(--bg2)}
+.ni-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ni-meta{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:10px;color:var(--text3);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:4px}
+.ni-title{font-size:15px;font-weight:500;line-height:1.5;color:var(--text);margin-bottom:3px}
+.ni-title.lg{font-size:18px}
+.ni-sub{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:11px;color:var(--text2);line-height:1.5}
+
+/* 後で読むボタン（通常） */
+.rl-btn{background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:10px;color:var(--text3);padding:3px 7px;flex-shrink:0;white-space:nowrap;transition:all 0.15s;margin-top:2px}
+.rl-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* 後で読むボタン（シンプル：☆） */
+.rl-star{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);padding:0 2px;flex-shrink:0;line-height:1;margin-top:2px}
+.rl-star.on{color:var(--accent)}
+
+/* シンプルモード記事行 */
+.ni-simple{padding:9px 16px;border-bottom:1px solid var(--border2);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px;transition:background 0.1s}
+.ni-simple:active{background:var(--bg2)}
+.ni-simple-title{font-size:14px;font-weight:500;line-height:1.45;color:var(--text);flex:1}
+
+/* DETAIL */
+.detail-wrap{flex:1;overflow-y:auto;padding:16px}
+.back-btn{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:12px;color:var(--text3);letter-spacing:0.08em;cursor:pointer;border:none;background:none;padding:0 0 12px 0;margin-bottom:12px;border-bottom:1px solid var(--border2);width:100%;text-align:left;display:block}
+.d-kicker{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:10px;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px}
+.d-title{font-size:20px;font-weight:700;line-height:1.45;color:var(--text);margin-bottom:10px;padding-bottom:10px;border-bottom:2px solid var(--text)}
+.d-body{font-size:15px;line-height:2;color:var(--text2)}
+.d-link{display:block;margin-top:20px;font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:12px;color:var(--info);padding-top:12px;border-top:1px solid var(--border2);text-decoration:none}
+
+/* PAGE */
+.page-wrap{flex:1;overflow-y:auto}
+.page-head{font-size:16px;font-weight:700;letter-spacing:0.08em;color:var(--text);padding:14px 16px 10px;border-bottom:2px solid var(--text);position:sticky;top:0;background:var(--bg);z-index:5}
+
+/* SETTINGS */
+.st-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border2)}
+.st-label{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:14px;color:var(--text)}
+.st-sub{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:11px;color:var(--text3);margin-top:3px}
+.tg{width:44px;height:24px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;position:relative;flex-shrink:0;transition:background 0.2s}
+.tg.on{background:var(--accent);border-color:var(--accent)}
+.tg::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:2px;left:3px;transition:left 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.tg.on::after{left:23px}
+
+/* BOTTOM NAV */
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;border-top:2px solid var(--text);background:var(--bg);z-index:20}
+.nb{flex:1;font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.1em;padding:12px 4px;border:none;background:transparent;color:var(--text3);cursor:pointer;border-right:1px solid var(--border2)}
+.nb:last-child{border-right:none}
+.nb.on{color:var(--text)}
+
+.empty{font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:13px;color:var(--text3);text-align:center;padding:3rem 16px;line-height:2}
+.loading-line{height:2px;background:var(--accent);animation:ld 1s infinite}
+@keyframes ld{0%{width:0%}50%{width:60%}100%{width:100%}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME -->
+  <div id="s-home" class="screen active">
+    <div class="mast">
+      <div class="mast-title">The Lean</div>
+      <div class="mast-rule"></div>
+      <div class="mast-meta"><span id="today"></span><span class="badge">低速対応</span></div>
+    </div>
+    <div class="search-wrap" id="search-wrap">
+      <input type="text" id="qi" placeholder="記事を検索..." oninput="ds()">
+      <button onclick="cs()">クリア</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="news-wrap">
+      <div class="news-count" id="cnt"></div>
+      <div id="nl"><div class="loading-line"></div></div>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div id="s-det" class="screen">
+    <div class="detail-wrap">
+      <button class="back-btn" onclick="goH()">← 一覧に戻る</button>
+      <div id="dc"></div>
+    </div>
+  </div>
+
+  <!-- READ LATER -->
+  <div id="s-bm" class="screen">
+    <div class="page-wrap">
+      <div class="page-head">後で読む</div>
+      <div id="bl"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="s-st" class="screen">
+    <div class="page-wrap">
+      <div class="page-head">設　定</div>
+      <div class="st-row">
+        <div><div class="st-label">シンプルモード</div><div class="st-sub">保存ボタンを ☆ に変更</div></div>
+        <div class="tg" id="tg-simple" onclick="toggleSimple()"></div>
+      </div>
+      <div class="st-row"><div><div class="st-label">朝のニュース通知</div><div class="st-sub">毎朝 7:00</div></div><div class="tg" onclick="this.classList.toggle('on')"></div></div>
+      <div class="st-row"><div><div class="st-label">昼のニュース通知</div><div class="st-sub">毎昼 12:00</div></div><div class="tg on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="st-row"><div><div class="st-label">夜のニュース通知</div><div class="st-sub">毎夜 18:00</div></div><div class="tg on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="st-row"><div><div class="st-label">速報通知</div><div class="st-sub">重大ニュースのみ</div></div><div class="tg" onclick="this.classList.toggle('on')"></div></div>
+      <div class="st-row"><div><div class="st-label">Wi-Fi 時に事前取得</div><div class="st-sub">低速時でも読める</div></div><div class="tg on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="st-row">
+        <div><div class="st-label">文字サイズ</div><div class="st-sub">現在：標準</div></div>
+        <div style="display:flex;gap:6px">
+          <button onclick="setFont(13)" style="font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text2);cursor:pointer">小</button>
+          <button onclick="setFont(15)" style="font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text2);cursor:pointer">中</button>
+          <button onclick="setFont(18)" style="font-family:-apple-system,'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text2);cursor:pointer">大</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nb on" id="nb-home" onclick="goH()">紙　面</button>
+    <button class="nb" id="nb-bm" onclick="goB()">後で読む</button>
+    <button class="nb" id="nb-st" onclick="goS()">設　定</button>
+  </nav>
+</div>
+
+<script>
+const FEEDS=[
+  {name:"総合",url:"https://www3.nhk.or.jp/rss/news/cat0.xml",src:"NHK"},
+  {name:"社会",url:"https://www3.nhk.or.jp/rss/news/cat1.xml",src:"NHK"},
+  {name:"経済",url:"https://www3.nhk.or.jp/rss/news/cat3.xml",src:"NHK"},
+  {name:"国際",url:"https://www3.nhk.or.jp/rss/news/cat6.xml",src:"NHK"},
+  {name:"科学",url:"https://www3.nhk.or.jp/rss/news/cat4.xml",src:"NHK"},
+  {name:"スポーツ",url:"https://www3.nhk.or.jp/rss/news/cat7.xml",src:"NHK"},
+];
+let cur=0,arts=[],all=[],bms=JSON.parse(localStorage.getItem('bms')||'[]');
+let simpleMode=localStorage.getItem('simpleMode')==='1';
+
+const N=new Date();
+document.getElementById('today').textContent=
+  N.getFullYear()+'年'+(N.getMonth()+1)+'月'+N.getDate()+'日 '+
+  ['日','月','火','水','木','金','土'][N.getDay()]+'曜';
+
+function initSimpleMode(){
+  document.getElementById('tg-simple').classList.toggle('on',simpleMode);
+}
+function toggleSimple(){
+  simpleMode=!simpleMode;
+  localStorage.setItem('simpleMode',simpleMode?'1':'0');
+  initSimpleMode();
+  rl();
+}
+
+function rTabs(){
+  document.getElementById('tabs').innerHTML=FEEDS.map((f,i)=>
+    `<button class="tab${i===cur?' on':''}" onclick="sw(${i})">${f.name}</button>`
+  ).join('');
+}
+
+async function loadFeed(i){
+  document.getElementById('nl').innerHTML='<div class="loading-line"></div>';
+  const f=FEEDS[i];
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),5000);
+  try{
+    const r=await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(f.url)}&count=10`,{signal:ctrl.signal});
+    clearTimeout(timer);
+    const d=await r.json();
+    if(d.items&&d.items.length){
+      all=d.items.slice(0,10).map(it=>({t:strip(it.title||''),d:strip(it.description||it.content||''),link:it.link||'',tm:it.pubDate||'',src:f.src}));
+      arts=[...all];const q=document.getElementById('qi').value;if(q)ds();else rl();return;
+    }
+  }catch(e){clearTimeout(timer);}
+  try{
+    const r2=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(f.url)}`);
+    const d=await r2.json();
+    const xml=new DOMParser().parseFromString(d.contents,'text/xml');
+    all=Array.from(xml.querySelectorAll('item')).slice(0,10).map(it=>({
+      t:strip(it.querySelector('title')?.textContent||''),
+      d:strip(it.querySelector('description')?.textContent||''),
+      link:(it.querySelector('link')?.textContent||'').trim(),
+      tm:it.querySelector('pubDate,dc\\:date')?.textContent||'',src:f.src
+    }));
+    arts=[...all];const q=document.getElementById('qi').value;if(q)ds();else rl();
+  }catch(e){
+    document.getElementById('nl').innerHTML='<div class="empty">記事を取得できませんでした<br>ネットワークをご確認ください</div>';
+  }
+}
+
+function strip(h){return(h||'').replace(/<[^>]*>/g,'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&[a-z]+;/gi,' ').replace(/\s+/g,' ').trim()}
+function fmt(s){const d=new Date(s);if(isNaN(d))return'';const m=(Date.now()-d)/60000;if(m<1)return'今';if(m<60)return Math.floor(m)+'分前';if(m<1440)return Math.floor(m/60)+'時間前';return Math.floor(m/1440)+'日前';}
+function isRL(t){return bms.some(b=>b.t===t)}
+function toggleRL(e,i){
+  e.stopPropagation();
+  const a=arts[i],idx=bms.findIndex(b=>b.t===a.t);
+  if(idx>=0)bms.splice(idx,1);else bms.unshift({...a});
+  localStorage.setItem('bms',JSON.stringify(bms));rl();
+}
+
+function rl(){
+  const nl=document.getElementById('nl');
+  document.getElementById('cnt').textContent=arts.length+'件 · '+FEEDS[cur].src+' · '+FEEDS[cur].name;
+  if(!arts.length){nl.innerHTML='<div class="empty">該当する記事がありません</div>';return;}
+  if(simpleMode){
+    nl.innerHTML=arts.map((a,i)=>`
+      <div class="ni" onclick="sd(${i})">
+        <div class="ni-row">
+          <div style="flex:1">
+            <div class="ni-meta">${a.src}${a.tm?' · '+fmt(a.tm):''}</div>
+            <div class="ni-title${i===0?' lg':''}">${a.t}</div>
+            ${a.d?`<div class="ni-sub">${a.d.slice(0,55)}${a.d.length>55?'…':''}</div>`:''}
+          </div>
+          <button class="rl-star${isRL(a.t)?' on':''}" onclick="toggleRL(event,${i})">${isRL(a.t)?'★':'☆'}</button>
+        </div>
+      </div>`).join('');
+  } else {
+    nl.innerHTML=arts.map((a,i)=>`
+      <div class="ni" onclick="sd(${i})">
+        <div class="ni-row">
+          <div style="flex:1">
+            <div class="ni-meta">${a.src}${a.tm?' · '+fmt(a.tm):''}</div>
+            <div class="ni-title${i===0?' lg':''}">${a.t}</div>
+            ${a.d?`<div class="ni-sub">${a.d.slice(0,55)}${a.d.length>55?'…':''}</div>`:''}
+          </div>
+          <button class="rl-btn${isRL(a.t)?' on':''}" onclick="toggleRL(event,${i})">${isRL(a.t)?'保存済':'後で読む'}</button>
+        </div>
+      </div>`).join('');
+  }
+}
+
+function ds(){const q=document.getElementById('qi').value.trim();arts=q?all.filter(a=>a.t.includes(q)||a.d.includes(q)):[...all];rl();}
+function cs(){document.getElementById('qi').value='';arts=[...all];rl();}
+
+function sd(i){
+  const a=arts[i];
+  document.getElementById('dc').innerHTML=`
+    <div class="d-kicker">${a.src}${a.tm?' · '+fmt(a.tm):''}</div>
+    <div class="d-title">${a.t}</div>
+    <div class="d-body">${a.d||'本文はリンク先でご確認ください。'}</div>
+    ${a.link?`<a class="d-link" href="${a.link}" target="_blank" rel="noopener">NHKニュースで続きを読む →</a>`:''}`;
+  ss('s-det');
+}
+
+function rBm(){
+  const el=document.getElementById('bl');
+  if(!bms.length){el.innerHTML='<div class="empty">保存した記事はありません<br>「後で読む」または ☆ をタップして保存</div>';return;}
+  el.innerHTML=bms.map((a,i)=>`
+    <div class="ni-simple" onclick="sBd(${i})">
+      <div class="ni-simple-title">${a.t}</div>
+      <button class="rl-star on" onclick="rmBm(event,${i})">★</button>
+    </div>`).join('');
+}
+function rmBm(e,i){e.stopPropagation();bms.splice(i,1);localStorage.setItem('bms',JSON.stringify(bms));rBm();}
+function sBd(i){
+  const a=bms[i];
+  document.getElementById('dc').innerHTML=`
+    <div class="d-kicker">${a.src} · 保存済み</div>
+    <div class="d-title">${a.t}</div>
+    <div class="d-body">${a.d||'本文はリンク先でご確認ください。'}</div>
+    ${a.link?`<a class="d-link" href="${a.link}" target="_blank" rel="noopener">NHKニュースで続きを読む →</a>`:''}`;
+  ss('s-det');
+}
+
+function setFont(sz){document.querySelectorAll('.ni-title,.ni-simple-title').forEach(el=>el.style.fontSize=sz+'px');localStorage.setItem('fontSize',sz);}
+const sf=localStorage.getItem('fontSize');if(sf)setFont(parseInt(sf));
+
+function ss(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function setNav(id){document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));document.getElementById(id).classList.add('on');}
+function goH(){ss('s-home');setNav('nb-home');}
+function goB(){rBm();ss('s-bm');setNav('nb-bm');}
+function goS(){ss('s-st');setNav('nb-st');}
+function sw(i){cur=i;rTabs();loadFeed(i);}
+
+initSimpleMode();rTabs();loadFeed(0);
+</script>
+</body>
+</html>
